@@ -64,6 +64,7 @@ input:focus-visible,button:focus-visible,.btn:focus-within{outline:2px solid var
 .plist .info{color:var(--muted);font-size:13px}
 .plist li button{min-height:36px;padding:0 12px;flex:0 0 auto}
 select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--line2);border-radius:8px;color:var(--text);font:400 15px var(--font);max-width:100%}
+#pPreset{flex:1 1 220px}
 [hidden]{display:none !important}
 .chk{display:inline-flex;align-items:center;gap:8px;min-height:44px;color:var(--soft);cursor:pointer}
 .chk input{width:18px;height:18px;accent-color:var(--accent)}
@@ -102,6 +103,15 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
   <details id="plist" class="plist">
     <summary>Playlist (.m3u) <span class="info" id="pcount">ยังไม่ได้โหลด</span></summary>
     <div class="pbody">
+      <div class="row">
+        <select id="pPreset" aria-label="เลือก playlist เริ่มต้น">
+          <option value="https://iptv-org.github.io/iptv/index.m3u">1. iptv-org — ทั้งหมด (index.m3u)</option>
+          <option value="https://iptv-org.github.io/iptv/countries/th.m3u">2. iptv-org — ไทย (th.m3u)</option>
+          <option value="playlists/tubi_all.m3u">3. Tubi — ทั้งหมด (tubi_all.m3u)</option>
+          <option value="playlists/Digital_TV.m3u">4. Digital TV (รวมช่องนานาชาติ)</option>
+          <option value="playlists/Thai_Digital_TV13.m3u">5. Thai Digital TV13</option>
+        </select>
+      </div>
       <div class="row">
         <input id="pUrl" type="url" value="https://iptv-org.github.io/iptv/index.m3u" placeholder="ลิงก์ไฟล์ .m3u / .m3u8 playlist (ไม่บังคับ)" aria-label="ลิงก์ playlist .m3u">
         <button id="pLoad" type="button">โหลดจากลิงก์</button>
@@ -527,15 +537,33 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
     slots.forEach(stop);
     fill(list.slice(0, slots.length));
   });
-  document.getElementById('pLoad').addEventListener('click', function () {
-    var u = pUrl.value.trim();
-    if (!/^https?:\/\//i.test(u)) { pInfo.textContent = 'ลิงก์ต้องขึ้นต้นด้วย http:// หรือ https://'; return; }
+  function loadFromUrl(u) {
+    u = (u || '').trim();
+    if (!u) return;
+    var isAbs = /^https?:\/\//i.test(u);
     pInfo.textContent = 'กำลังโหลด playlist…';
     fetch(u).then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.text();
     }).then(function (t) { pInfo.textContent = ''; handleText(t); })
-      .catch(function () { pInfo.textContent = 'โหลดไม่ได้ (ลิงก์ผิดหรือเซิร์ฟเวอร์ไม่เปิด CORS) — ลองดาวน์โหลดไฟล์แล้วใช้ปุ่ม “เลือกไฟล์ .m3u” แทน'; });
+      .catch(function () {
+        pInfo.textContent = isAbs
+          ? 'โหลดไม่ได้ (ลิงก์ผิดหรือเซิร์ฟเวอร์ไม่เปิด CORS) — ลองดาวน์โหลดไฟล์แล้วใช้ปุ่ม “เลือกไฟล์ .m3u” แทน'
+          : 'โหลดไม่ได้ — ไม่พบไฟล์นี้บนเซิร์ฟเวอร์';
+      });
+  }
+
+  var pPreset = document.getElementById('pPreset');
+  pPreset.addEventListener('change', function () {
+    var u = pPreset.value;
+    pUrl.value = u;
+    loadFromUrl(u);
+  });
+
+  document.getElementById('pLoad').addEventListener('click', function () {
+    var u = pUrl.value.trim();
+    if (!/^https?:\/\//i.test(u) && !/^playlists\//i.test(u)) { pInfo.textContent = 'ลิงก์ต้องขึ้นต้นด้วย http:// หรือ https://'; return; }
+    loadFromUrl(u);
   });
 
   function handleText(text) {
