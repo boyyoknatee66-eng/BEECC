@@ -17,8 +17,17 @@
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px}
 body{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-.wrap{max-width:1600px;margin:0 auto;padding:20px}
+.wrap{max-width:1680px;margin:0 auto;padding:20px}
 header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.layout-main{display:flex;gap:16px;align-items:flex-start}
+.content{flex:1;min-width:0}
+.sidebar{width:340px;flex:0 0 340px;position:sticky;top:16px;max-height:calc(100vh - 32px);display:flex;flex-direction:column}
+.sidebar-head{min-height:44px;display:flex;align-items:center;gap:8px;padding:0 14px;font-weight:600;border-bottom:1px solid var(--line);flex:0 0 auto}
+.sidebar .pbody{overflow:auto}
+@media (max-width:900px){
+  .layout-main{flex-direction:column}
+  .sidebar{width:100%;flex:none;position:static;max-height:none}
+}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px}
 .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 button,.btn{
@@ -53,9 +62,8 @@ input:focus-visible,button:focus-visible,.btn:focus-within{outline:2px solid var
 .row.small button{min-height:40px;padding:0 12px;font-size:15px}
 .hint{margin:16px 0 0;font-size:15px;line-height:1.7;color:var(--muted)}
 .hint code{font-family:var(--font);color:var(--soft)}
-.plist{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:12px}
-.plist summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:10px;padding:0 14px;font-weight:500}
-.plist .pbody{padding:0 14px 14px;display:flex;flex-direction:column;gap:10px}
+.plist{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.plist .pbody{padding:14px;display:flex;flex-direction:column;gap:10px}
 .plist ul{list-style:none;margin:0;padding:0;max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:8px}
 .plist li{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:6px 10px;border-bottom:1px solid var(--line)}
 .plist li:last-child{border-bottom:0}
@@ -100,49 +108,53 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
     </div>
   </header>
 
-  <details id="plist" class="plist">
-    <summary>Playlist (.m3u) <span class="info" id="pcount">ยังไม่ได้โหลด</span></summary>
-    <div class="pbody">
-      <div class="row">
-        <select id="pPreset" aria-label="เลือก playlist เริ่มต้น">
-          <option value="https://iptv-org.github.io/iptv/index.m3u">1. iptv-org — ทั้งหมด (index.m3u)</option>
-          <option value="playlists/tubi_all.m3u">2. Tubi — ทั้งหมด (tubi_all.m3u)</option>
-          <option value="https://iptv-org.github.io/iptv/countries/th.m3u">3. iptv-org — ไทย (th.m3u)</option>
-          <option value="playlists/Digital_TV.m3u">4. THAI Digital TV</option>
-          <option value="playlists/Thai_Digital_TV13.m3u">5. Thai Digital TV13</option>
-        </select>
+  <div class="layout-main">
+    <aside id="plist" class="plist sidebar" aria-label="Playlist">
+      <div class="sidebar-head">Playlist (.m3u) <span class="info" id="pcount">ยังไม่ได้โหลด</span></div>
+      <div class="pbody">
+        <div class="row">
+          <select id="pPreset" aria-label="เลือก playlist เริ่มต้น">
+            <option value="https://iptv-org.github.io/iptv/index.m3u">1. iptv-org — ทั้งหมด (index.m3u)</option>
+            <option value="playlists/tubi_all.m3u">2. Tubi — ทั้งหมด (tubi_all.m3u)</option>
+            <option value="https://iptv-org.github.io/iptv/countries/th.m3u">3. iptv-org — ไทย (th.m3u)</option>
+            <option value="playlists/Digital_TV.m3u">4. THAI Digital TV</option>
+            <option value="playlists/Thai_Digital_TV13.m3u">5. Thai Digital TV13</option>
+          </select>
+        </div>
+        <div class="row">
+          <input id="pUrl" type="url" value="https://iptv-org.github.io/iptv/index.m3u" placeholder="ลิงก์ไฟล์ .m3u / .m3u8 playlist (ไม่บังคับ)" aria-label="ลิงก์ playlist .m3u">
+          <button id="pLoad" type="button">โหลดจากลิงก์</button>
+          <label class="btn" for="importFile">เลือกไฟล์ .m3u</label>
+          <button id="pHide" type="button">ซ่อน</button>
+        </div>
+        <div class="row">
+          <input id="pSearch" type="text" placeholder="ค้นหาชื่อช่อง" aria-label="ค้นหาชื่อช่องใน playlist">
+          <select id="pGroup" aria-label="กรองตามกลุ่ม" hidden></select>
+          <button id="pFill" type="button">เติมทุกช่องจากรายการนี้</button>
+        </div>
+        <div class="row">
+          <button id="pCheckBtn" type="button" class="primary">ตรวจช่องที่ดูได้</button>
+          <button id="pCheckStop" type="button" hidden>หยุดตรวจ</button>
+          <label class="chk" for="pOnlyOk"><input id="pOnlyOk" type="checkbox"> แสดงเฉพาะช่องที่ดูได้</label>
+        </div>
+        <div class="info" id="pCheck" role="status"></div>
+        <div class="info" id="pInfo" role="status"></div>
+        <ul id="pList" aria-label="รายการช่องใน playlist"></ul>
       </div>
-      <div class="row">
-        <input id="pUrl" type="url" value="https://iptv-org.github.io/iptv/index.m3u" placeholder="ลิงก์ไฟล์ .m3u / .m3u8 playlist (ไม่บังคับ)" aria-label="ลิงก์ playlist .m3u">
-        <button id="pLoad" type="button">โหลดจากลิงก์</button>
-        <label class="btn" for="importFile">เลือกไฟล์ .m3u</label>
-        <button id="pHide" type="button">ซ่อน</button>
-      </div>
-      <div class="row">
-        <input id="pSearch" type="text" placeholder="ค้นหาชื่อช่อง" aria-label="ค้นหาชื่อช่องใน playlist">
-        <select id="pGroup" aria-label="กรองตามกลุ่ม" hidden></select>
-        <button id="pFill" type="button">เติมทุกช่องจากรายการนี้</button>
-      </div>
-      <div class="row">
-        <button id="pCheckBtn" type="button" class="primary">ตรวจช่องที่ดูได้</button>
-        <button id="pCheckStop" type="button" hidden>หยุดตรวจ</button>
-        <label class="chk" for="pOnlyOk"><input id="pOnlyOk" type="checkbox"> แสดงเฉพาะช่องที่ดูได้</label>
-      </div>
-      <div class="info" id="pCheck" role="status"></div>
-      <div class="info" id="pInfo" role="status"></div>
-      <ul id="pList" aria-label="รายการช่องใน playlist"></ul>
+    </aside>
+
+    <div class="content">
+      <main id="grid" class="grid"></main>
+
+      <p class="hint">
+        กำหนดจำนวนคอลัมน์ × แถวได้ตั้งแต่ 1×1 ถึง 6×6 (จำนวนช่อง = คอลัมน์ × แถว) · ปรับขนาดแล้วลิงก์ของช่องเดิมยังอยู่ ·
+        ใส่ลิงก์ <code>.m3u8</code> แล้วกด “เล่น” · ทุกช่องเริ่มแบบปิดเสียง เปิดเสียงได้ทีละช่อง ·
+        Import รับไฟล์ <code>multiview.json</code>, ไฟล์ .txt ที่มีลิงก์บรรทัดละช่อง และ playlist <code>.m3u</code> (รูปแบบ #EXTINF) ซึ่งจะเปิดรายการให้เลือกช่องใส่ได้ (กด “ตรวจช่องที่ดูได้” เพื่อคัดเฉพาะช่องที่เล่นได้จากเบราว์เซอร์นี้) ·
+        <span class="warn">เปิดหลายช่องพร้อมกันกินเครื่องและเน็ตมาก</span> ·
+        ถ้าเล่นไม่ขึ้น มักเป็นเพราะเซิร์ฟเวอร์สตรีมไม่เปิด CORS หรือเปิดหน้านี้ผ่าน https แต่ลิงก์เป็น http
+      </p>
     </div>
-  </details>
-
-  <main id="grid" class="grid"></main>
-
-  <p class="hint">
-    กำหนดจำนวนคอลัมน์ × แถวได้ตั้งแต่ 1×1 ถึง 6×6 (จำนวนช่อง = คอลัมน์ × แถว) · ปรับขนาดแล้วลิงก์ของช่องเดิมยังอยู่ ·
-    ใส่ลิงก์ <code>.m3u8</code> แล้วกด “เล่น” · ทุกช่องเริ่มแบบปิดเสียง เปิดเสียงได้ทีละช่อง ·
-    Import รับไฟล์ <code>multiview.json</code>, ไฟล์ .txt ที่มีลิงก์บรรทัดละช่อง และ playlist <code>.m3u</code> (รูปแบบ #EXTINF) ซึ่งจะเปิดรายการให้เลือกช่องใส่ได้ (กด “ตรวจช่องที่ดูได้” เพื่อคัดเฉพาะช่องที่เล่นได้จากเบราว์เซอร์นี้) ·
-    <span class="warn">เปิดหลายช่องพร้อมกันกินเครื่องและเน็ตมาก</span> ·
-    ถ้าเล่นไม่ขึ้น มักเป็นเพราะเซิร์ฟเวอร์สตรีมไม่เปิด CORS หรือเปิดหน้านี้ผ่าน https แต่ลิงก์เป็น http
-  </p>
+  </div>
 </div>
 
 <script>
@@ -411,7 +423,6 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
     pSearch.value = '';
     pCount.textContent = '· ' + items.length + ' ช่อง' + (skipped ? ' (ข้าม ' + skipped + ' รายการที่ไม่ใช่ http/https)' : '');
     setPanel(true);
-    plBox.open = true;
     renderPlaylist();
   }
 
