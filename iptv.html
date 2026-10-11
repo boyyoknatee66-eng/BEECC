@@ -25,8 +25,8 @@ header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:s
 .sidebar-head{min-height:44px;display:flex;align-items:center;gap:8px;padding:0 14px;font-weight:600;border-bottom:1px solid var(--line);flex:0 0 auto}
 .sidebar .pbody{overflow:auto}
 .resizer{flex:0 0 10px;align-self:stretch;cursor:col-resize;position:relative;touch-action:none}
-.resizer::after{content:'';position:absolute;left:4px;top:0;bottom:0;width:2px;border-radius:2px;background:var(--line2)}
-.resizer:hover::after,.resizer.active::after{background:var(--accent)}
+.resizer::after{content:'';position:absolute;left:4px;top:0;bottom:0;width:2px;border-radius:2px;background:transparent}
+.resizer:hover::after,.resizer.active::after,.resizer:focus-visible::after{background:var(--accent)}
 @media (max-width:900px){
   .layout-main{flex-direction:column}
   .sidebar{width:100% !important;flex:none;position:static;max-height:none}
