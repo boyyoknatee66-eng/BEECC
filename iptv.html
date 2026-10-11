@@ -19,14 +19,19 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font
 body{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .wrap{max-width:1680px;margin:0 auto;padding:20px}
 header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
-.layout-main{display:flex;gap:16px;align-items:flex-start}
-.content{flex:1;min-width:0}
-.sidebar{width:340px;flex:0 0 340px;position:sticky;top:16px;max-height:calc(100vh - 32px);display:flex;flex-direction:column}
+.layout-main{display:flex;gap:0;align-items:flex-start;--sbw:340px}
+.content{flex:1;min-width:0;padding-left:16px}
+.sidebar{width:var(--sbw);flex:0 0 var(--sbw);position:sticky;top:16px;max-height:calc(100vh - 32px);display:flex;flex-direction:column}
 .sidebar-head{min-height:44px;display:flex;align-items:center;gap:8px;padding:0 14px;font-weight:600;border-bottom:1px solid var(--line);flex:0 0 auto}
 .sidebar .pbody{overflow:auto}
+.resizer{flex:0 0 10px;align-self:stretch;cursor:col-resize;position:relative;touch-action:none}
+.resizer::after{content:'';position:absolute;left:4px;top:0;bottom:0;width:2px;border-radius:2px;background:var(--line2)}
+.resizer:hover::after,.resizer.active::after{background:var(--accent)}
 @media (max-width:900px){
   .layout-main{flex-direction:column}
-  .sidebar{width:100%;flex:none;position:static;max-height:none}
+  .sidebar{width:100% !important;flex:none;position:static;max-height:none}
+  .resizer{display:none}
+  .content{padding-left:0}
 }
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px}
 .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -142,6 +147,8 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
         <ul id="pList" aria-label="รายการช่องใน playlist"></ul>
       </div>
     </aside>
+
+    <div id="resizer" class="resizer" role="slider" aria-orientation="vertical" aria-label="ปรับความกว้าง Playlist" tabindex="0"></div>
 
     <div class="content">
       <main id="grid" class="grid"></main>
@@ -617,6 +624,64 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
     resize(c, rr);
     fill(channels.slice(0, slots.length));
   }
+
+  // ---------- ปรับความกว้าง sidebar ----------
+  (function () {
+    var SB_STORE = 'multiview.sbw';
+    var MIN = 220, MAX = 640;
+    var layoutMain = document.querySelector('.layout-main');
+    var resizer = document.getElementById('resizer');
+    if (!layoutMain || !resizer) return;
+
+    function clampW(w) { return Math.max(MIN, Math.min(MAX, w)); }
+    function setWidth(w) {
+      w = clampW(w);
+      layoutMain.style.setProperty('--sbw', w + 'px');
+      resizer.setAttribute('aria-valuenow', String(w));
+      return w;
+    }
+    function saveWidth(w) { try { localStorage.setItem(SB_STORE, String(w)); } catch (e) {} }
+
+    var savedW = null;
+    try { savedW = parseInt(localStorage.getItem(SB_STORE), 10); } catch (e) {}
+    if (savedW && !isNaN(savedW)) setWidth(savedW);
+    resizer.setAttribute('aria-valuemin', String(MIN));
+    resizer.setAttribute('aria-valuemax', String(MAX));
+
+    var dragging = false, startX = 0, startW = 0;
+    function onMove(clientX) {
+      if (!dragging) return;
+      setWidth(startW + (clientX - startX));
+    }
+    function stopDrag() {
+      if (!dragging) return;
+      dragging = false;
+      resizer.classList.remove('active');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      var w = parseInt(getComputedStyle(layoutMain).getPropertyValue('--sbw'), 10);
+      saveWidth(clampW(w || startW));
+    }
+    resizer.addEventListener('pointerdown', function (e) {
+      dragging = true; startX = e.clientX;
+      startW = parseInt(getComputedStyle(layoutMain).getPropertyValue('--sbw'), 10) || 340;
+      resizer.classList.add('active');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      resizer.setPointerCapture(e.pointerId);
+    });
+    resizer.addEventListener('pointermove', function (e) { onMove(e.clientX); });
+    resizer.addEventListener('pointerup', stopDrag);
+    resizer.addEventListener('pointercancel', stopDrag);
+    resizer.addEventListener('dblclick', function () { saveWidth(setWidth(340)); });
+    resizer.addEventListener('keydown', function (e) {
+      var cur = parseInt(getComputedStyle(layoutMain).getPropertyValue('--sbw'), 10) || 340;
+      if (e.key === 'ArrowLeft') { saveWidth(setWidth(cur - 20)); e.preventDefault(); }
+      else if (e.key === 'ArrowRight') { saveWidth(setWidth(cur + 20)); e.preventDefault(); }
+      else if (e.key === 'Home') { saveWidth(setWidth(MIN)); e.preventDefault(); }
+      else if (e.key === 'End') { saveWidth(setWidth(MAX)); e.preventDefault(); }
+    });
+  })();
 
   document.getElementById('importFile').addEventListener('change', function (e) {
     var f = e.target.files && e.target.files[0];
