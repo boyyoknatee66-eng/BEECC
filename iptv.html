@@ -349,7 +349,6 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
   var pGroup = document.getElementById('pGroup');
   var pUrl = document.getElementById('pUrl');
   var ptr = 0;
-  var SHOW = 100;
 
   function parseM3U(text) {
     var lines = text.replace(/^\uFEFF/, '').split(/\r?\n/);
@@ -504,7 +503,8 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
     var list = filtered();
     var keep = pList.scrollTop;
     pList.textContent = '';
-    list.slice(0, SHOW).forEach(function (it) {
+    var frag = document.createDocumentFragment();
+    list.forEach(function (it) {
       var li = document.createElement('li');
       var st = status[it.url];
       if (st === 'fail') li.className = 'dim';
@@ -537,11 +537,12 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
         actions.appendChild(rb);
       }
       li.appendChild(sp); li.appendChild(actions);
-      pList.appendChild(li);
+      frag.appendChild(li);
     });
+    pList.appendChild(frag);
     pList.scrollTop = keep;
     pInfo.textContent = playlist.length
-      ? (list.length > SHOW ? 'แสดง ' + SHOW + ' จาก ' + list.length + ' ช่อง — พิมพ์ค้นหาเพื่อกรอง' : 'พบ ' + list.length + ' ช่อง')
+      ? 'พบ ' + list.length + ' ช่อง'
       : '';
   }
 
