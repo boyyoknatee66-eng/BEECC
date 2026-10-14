@@ -119,7 +119,8 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
       <div class="pbody">
         <div class="row">
           <select id="pPreset" aria-label="เลือก playlist เริ่มต้น">
-            <option value="https://iptv-org.github.io/iptv/index.m3u">1. iptv-org — ทั้งหมด (index.m3u)</option>
+          <option value="saved">⭐ ช่องที่บันทึกไว้ (ที่เคยตรวจแล้ว)</option>
+<option value="https://iptv-org.github.io/iptv/index.m3u">1. iptv-org — ทั้งหมด (index.m3u)</option>
             <option value="playlists/tubi_all.m3u">2. Tubi — ทั้งหมด (tubi_all.m3u)</option>
             <option value="https://iptv-org.github.io/iptv/countries/th.m3u">3. iptv-org — ไทย (th.m3u)</option>
             <option value="playlists/Digital_TV.m3u">4. THAI Digital TV</option>
@@ -141,8 +142,10 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
           <button id="pCheckBtn" type="button" class="primary">ตรวจช่องที่ดูได้</button>
           <button id="pCheckStop" type="button" hidden>หยุดตรวจ</button>
           <label class="chk" for="pOnlyOk"><input id="pOnlyOk" type="checkbox"> แสดงเฉพาะช่องที่ดูได้</label>
-        </div>
-        <div class="info" id="pCheck" role="status"></div>
+          <button id="pClearSaved" type="button">ล้างที่บันทึก</button>
+          </div>
+          <div class="info" id="pUpdated" role="status"></div>
+          <div class="info" id="pCheck" role="status"></div>
         <div class="info" id="pInfo" role="status"></div>
         <ul id="pList" aria-label="รายการช่องใน playlist"></ul>
       </div>
@@ -372,6 +375,50 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
   var status = {};
   var onlyOk = document.getElementById('pOnlyOk');
 
+  var WSTORE = 'multiview.working';
+  var saved = { updatedAt: null, map: {} };
+
+  function loadSavedStore() {
+  try {
+  var r = JSON.parse(localStorage.getItem(WSTORE) || 'null');
+  if (r && r.channels) {
+  saved.updatedAt = r.updatedAt;
+  r.channels.forEach(function (c) { saved.map[c.url] = c; });
+  }
+  } catch (e) {}
+  }
+  function savedList() {
+  return Object.keys(saved.map).map(function (u) { return saved.map[u]; });
+  }
+  function persistSaved() {
+  try {
+  localStorage.setItem(WSTORE, JSON.stringify({ updatedAt: saved.updatedAt, channels: savedList() }));
+  } catch (e) {
+  document.getElementById('pUpdated').textContent = 'บันทึกไม่ได้ (พื้นที่เบราว์เซอร์เต็มหรือถูกปิด)';
+  }
+  }
+  function showUpdated() {
+  var el = document.getElementById('pUpdated');
+  if (!saved.updatedAt) { el.textContent = ''; return; }
+  var d = new Date(saved.updatedAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+  el.textContent = 'บันทึกช่องที่ดูได้ล่าสุด: ' + d + ' · ' + savedList().length + ' ช่อง';
+  }
+  function showSaved() {
+  var items = savedList();
+  if (!items.length) { pInfo.textContent = 'ยังไม่มีช่องที่บันทึกไว้ — โหลด playlist แล้วกด “ตรวจช่องที่ดูได้” ก่อน'; return; }
+  setPlaylist(items, 0);
+  items.forEach(function (it) { status[it.url] = 'ok'; });
+  onlyOk.checked = true;
+  renderPlaylist();
+  showUpdated();
+  }
+  document.getElementById('pClearSaved').addEventListener('click', function () {
+  if (!confirm('ล้างช่องที่บันทึกไว้ทั้งหมด?')) return;
+  saved = { updatedAt: null, map: {} };
+  try { localStorage.removeItem(WSTORE); } catch (e) {}
+  showUpdated();
+  });
+
   function baseFiltered() {
     var q = pSearch.value.trim().toLowerCase();
     var g = pGroup.hidden ? '' : pGroup.value;
@@ -529,6 +576,11 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
       btnCheck.hidden = false; btnStop.hidden = true;
       pCheck.textContent = (aborted ? 'หยุดตรวจแล้ว · ' : 'ตรวจเสร็จ · ') + 'ตรวจ ' + done + ' ช่อง ดูได้ ' + okN + ' ช่อง' +
         (capped && !aborted ? ' (ตรวจได้สูงสุด ' + CHECK_MAX + ' ช่องต่อครั้ง — กดตรวจอีกครั้งเพื่อตรวจต่อ)' : '');
+      todo.forEach(function (it) {
+      if (status[it.url] === 'ok') saved.map[it.url] = { name: it.name, url: it.url, group: it.group || '' };
+      else if (status[it.url] === 'fail') delete saved.map[it.url];
+      });
+      if (done > 0) { saved.updatedAt = new Date().toISOString(); persistSaved(); showUpdated(); }
       if (okN > 0 && !aborted) onlyOk.checked = true;
       renderPlaylist();
     });
@@ -574,6 +626,7 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
   var pPreset = document.getElementById('pPreset');
   pPreset.addEventListener('change', function () {
     var u = pPreset.value;
+    if (u === 'saved') { pUrl.value = ''; showSaved(); return; }
     pUrl.value = u;
     loadFromUrl(u);
   });
@@ -682,6 +735,9 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
       else if (e.key === 'End') { saveWidth(setWidth(MAX)); e.preventDefault(); }
     });
   })();
+
+  loadSavedStore();
+  if (savedList().length) showSaved();
 
   document.getElementById('importFile').addEventListener('change', function (e) {
     var f = e.target.files && e.target.files[0];
