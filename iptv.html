@@ -77,6 +77,7 @@ input:focus-visible,button:focus-visible,.btn:focus-within{outline:2px solid var
 .plist .info{color:var(--muted);font-size:13px}
 .plist li button{min-height:36px;padding:0 12px;flex:0 0 auto}
 .plist .acts{display:flex;gap:6px;flex:0 0 auto}
+.plist .more{min-width:40px;padding:0 10px;font-weight:700;letter-spacing:1px}
 button.danger{border-color:#7A3A32;color:#FFB4A3}
 button.danger:hover{background:#2A1A18}
 select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--line2);border-radius:8px;color:var(--text);font:400 15px var(--font);max-width:100%}
@@ -517,9 +518,22 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
       b.addEventListener('click', function () { useItem(it); });
       actions.appendChild(b);
       if (isFavMode()) {
-        var rb = document.createElement('button'); rb.type = 'button'; rb.className = 'danger'; rb.textContent = 'ลบ';
+        var moreBtn = document.createElement('button'); moreBtn.type = 'button'; moreBtn.className = 'more';
+        moreBtn.textContent = '⋯'; moreBtn.setAttribute('aria-label', 'ตัวเลือกเพิ่มเติม ' + it.name); moreBtn.setAttribute('aria-expanded', 'false');
+        var rb = document.createElement('button'); rb.type = 'button'; rb.className = 'danger'; rb.textContent = 'ลบ'; rb.hidden = true;
         rb.setAttribute('aria-label', 'ลบช่องแนะนำ ' + it.name);
-        rb.addEventListener('click', function () { removeFavorite(it.url); });
+        rb.addEventListener('click', function (e) { e.stopPropagation(); removeFavorite(it.url); });
+        moreBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var willShow = rb.hidden;
+          pList.querySelectorAll('button.danger').forEach(function (x) {
+            x.hidden = true;
+            var m = x.previousSibling; if (m && m.classList && m.classList.contains('more')) m.setAttribute('aria-expanded', 'false');
+          });
+          rb.hidden = !willShow;
+          moreBtn.setAttribute('aria-expanded', willShow ? 'true' : 'false');
+        });
+        actions.appendChild(moreBtn);
         actions.appendChild(rb);
       }
       li.appendChild(sp); li.appendChild(actions);
@@ -812,6 +826,13 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
     r.onload = function () { handleText(String(r.result || '')); };
     r.readAsText(f);
     e.target.value = '';
+  });
+
+  document.addEventListener('click', function () {
+    pList.querySelectorAll('button.danger').forEach(function (x) {
+      x.hidden = true;
+      var m = x.previousSibling; if (m && m.classList && m.classList.contains('more')) m.setAttribute('aria-expanded', 'false');
+    });
   });
 })();
 </script>
