@@ -104,8 +104,6 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
         <input id="rowsIn" type="number" min="1" max="6" step="1" value="2" inputmode="numeric">
         <span class="total" id="total" aria-live="polite">= 4 ช่อง</span>
       </div>
-      <button id="playAll" type="button" class="primary">เล่นทุกช่อง</button>
-      <button id="stopAll" type="button">หยุดทั้งหมด</button>
       <button id="plToggle" type="button" aria-controls="plist" aria-expanded="true">ซ่อน Playlist</button>
       <button id="exportBtn" type="button">Export</button>
       <label class="btn" for="importFile">Import</label>
@@ -136,13 +134,11 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
         <div class="row">
           <input id="pSearch" type="text" placeholder="ค้นหาชื่อช่อง" aria-label="ค้นหาชื่อช่องใน playlist">
           <select id="pGroup" aria-label="กรองตามกลุ่ม" hidden></select>
-          <button id="pFill" type="button">เติมทุกช่องจากรายการนี้</button>
         </div>
         <div class="row">
           <button id="pCheckBtn" type="button" class="primary">ตรวจช่องที่ดูได้</button>
           <button id="pCheckStop" type="button" hidden>หยุดตรวจ</button>
           <label class="chk" for="pOnlyOk"><input id="pOnlyOk" type="checkbox"> แสดงเฉพาะช่องที่ดูได้</label>
-          <button id="pClearSaved" type="button">ล้างที่บันทึก</button>
           </div>
           <div class="info" id="pUpdated" role="status"></div>
           <div class="info" id="pCheck" role="status"></div>
@@ -311,8 +307,6 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
   colsIn.addEventListener('change', onSize);
   rowsIn.addEventListener('change', onSize);
 
-  document.getElementById('playAll').addEventListener('click', function () { slots.forEach(play); });
-  document.getElementById('stopAll').addEventListener('click', function () { slots.forEach(stop); });
 
   document.getElementById('exportBtn').addEventListener('click', function () {
     var data = {
@@ -412,12 +406,6 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
   renderPlaylist();
   showUpdated();
   }
-  document.getElementById('pClearSaved').addEventListener('click', function () {
-  if (!confirm('ล้างช่องที่บันทึกไว้ทั้งหมด?')) return;
-  saved = { updatedAt: null, map: {} };
-  try { localStorage.removeItem(WSTORE); } catch (e) {}
-  showUpdated();
-  });
 
   function baseFiltered() {
     var q = pSearch.value.trim().toLowerCase();
@@ -601,12 +589,6 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
 
   pSearch.addEventListener('input', renderPlaylist);
   pGroup.addEventListener('change', renderPlaylist);
-  document.getElementById('pFill').addEventListener('click', function () {
-    var list = filtered();
-    if (!list.length) return;
-    slots.forEach(stop);
-    fill(list.slice(0, slots.length));
-  });
   function loadFromUrl(u) {
     u = (u || '').trim();
     if (!u) return;
