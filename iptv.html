@@ -104,6 +104,7 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
         <input id="rowsIn" type="number" min="1" max="6" step="1" value="2" inputmode="numeric">
         <span class="total" id="total" aria-live="polite">= 4 ช่อง</span>
       </div>
+      <button id="suggestAllBtn" type="button" title="ใส่ช่องแนะนำให้ทุกช่องอัตโนมัติ">✨ ใส่ช่องแนะนำทั้งหมด</button>
       <button id="plToggle" type="button" aria-controls="plist" aria-expanded="true">ซ่อน Playlist</button>
       <button id="exportBtn" type="button">Export</button>
       <label class="btn" for="importFile">Import</label>
@@ -118,6 +119,7 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
         <div class="row">
           <select id="pPreset" aria-label="เลือก playlist เริ่มต้น">
           <option value="saved">⭐ ช่องที่บันทึกไว้ (ที่เคยตรวจแล้ว)</option>
+            <option value="recommended">✨ ช่องแนะนำ (คัดมาแล้ว)</option>
 <option value="https://iptv-org.github.io/iptv/index.m3u">1. iptv-org — ทั้งหมด (index.m3u)</option>
             <option value="playlists/tubi_all.m3u">2. Tubi — ทั้งหมด (tubi_all.m3u)</option>
             <option value="https://iptv-org.github.io/iptv/countries/th.m3u">3. iptv-org — ไทย (th.m3u)</option>
@@ -168,6 +170,24 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
   var MAX = 6;
   var STORE = 'multiview.v2';
   var DEFAULT = [{ name: '', url: 'https://stream.4fun.tv:8888/sd/4fun_sd_high.m3u8' }];
+  var RECOMMENDED = [
+    { name: 'CH3 HD', url: 'https://cdn6.goprimetime.info/feed/eI5rczhSQpWBcgOtqRLNWw/ch3hd/index.m3u8', group: 'แนะนำ' },
+    { name: 'CH7 HD', url: 'https://live-cdn-hwc.ch7.com/livech7hd/HD_1080p.m3u8', group: 'แนะนำ' },
+    { name: 'Workpoint TV', url: 'https://cdn6.goprimetime.info/feed/eI5rczhSQpWBcgOtqRLNWw/chworkpoint/index.m3u8', group: 'แนะนำ' },
+    { name: 'ONE HD', url: 'https://cdn6.goprimetime.info/feed/eI5rczhSQpWBcgOtqRLNWw/chonehd/index.m3u8', group: 'แนะนำ' },
+    { name: 'MONO 29', url: 'https://cdn6.goprimetime.info/feed/eI5rczhSQpWBcgOtqRLNWw/chmono29/index.m3u8', group: 'แนะนำ' },
+    { name: 'GMM 25', url: 'https://cdn6.goprimetime.info/feed/eI5rczhSQpWBcgOtqRLNWw/chgmm/index.m3u8', group: 'แนะนำ' },
+    { name: 'Thairath TV', url: 'https://cdn6.goprimetime.info/feed/eI5rczhSQpWBcgOtqRLNWw/chthairath/index.m3u8', group: 'แนะนำ' },
+    { name: 'Amarin TV', url: 'https://cdn6.goprimetime.info/feed/eI5rczhSQpWBcgOtqRLNWw/chamarin/index.m3u8', group: 'แนะนำ' },
+    { name: 'PPTV HD', url: 'https://cdn6.goprimetime.info/feed/eI5rczhSQpWBcgOtqRLNWw/chpptvhd/index.m3u8', group: 'แนะนำ' },
+    { name: 'Nation TV', url: 'https://cdn6.goprimetime.info/feed/eI5rczhSQpWBcgOtqRLNWw/chnation/index.m3u8', group: 'แนะนำ' },
+    { name: 'True 4U', url: 'https://cdn6.goprimetime.info/feed/eI5rczhSQpWBcgOtqRLNWw/chtrue4u/index.m3u8', group: 'แนะนำ' },
+    { name: 'TNN 16', url: 'https://cdn6.goprimetime.info/feed/eI5rczhSQpWBcgOtqRLNWw/chtnn/index.m3u8', group: 'แนะนำ' },
+    { name: 'THAI PBS HD', url: 'https://cdn6.goprimetime.info/feed/eI5rczhSQpWBcgOtqRLNWw/chthaipbs/index.m3u8', group: 'แนะนำ' },
+    { name: 'NBT HD', url: 'https://cdn6.goprimetime.info/feed/eI5rczhSQpWBcgOtqRLNWw/chnbt/index.m3u8', group: 'แนะนำ' },
+    { name: 'MCOT HD', url: 'https://cdn6.goprimetime.info/feed/eI5rczhSQpWBcgOtqRLNWw/chmcothd/index.m3u8', group: 'แนะนำ' },
+    { name: 'T Sports 7', url: 'https://cdn6.goprimetime.info/feed/eI5rczhSQpWBcgOtqRLNWw/chtsport/index.m3u8', group: 'แนะนำ' }
+  ];
   var grid = document.getElementById('grid');
   var colsIn = document.getElementById('colsIn');
   var rowsIn = document.getElementById('rowsIn');
@@ -250,6 +270,7 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
       '<div class="row"><input type="text" class="nm" placeholder="ชื่อช่อง (ไม่บังคับ)" aria-label="ชื่อช่อง ' + (i + 1) + '" style="flex:0 1 140px">' +
       '<input type="url" class="ur" placeholder="https://…/stream.m3u8" aria-label="ลิงก์ .m3u8 ช่อง ' + (i + 1) + '"></div>' +
       '<div class="row small"><button type="button" class="go primary">เล่น</button>' +
+      '<button type="button" class="sg" title="สุ่มใส่ช่องแนะนำในช่องนี้">✨ แนะนำ</button>' +
       '<button type="button" class="mu" aria-pressed="false">เปิดเสียง</button>' +
       '<button type="button" class="st">หยุด</button>' +
       '<button type="button" class="cl">ล้าง</button></div>';
@@ -264,6 +285,7 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
     s.url.addEventListener('change', saveState);
     s.url.addEventListener('keydown', function (e) { if (e.key === 'Enter') { saveState(); play(s); } });
     cell.querySelector('.go').addEventListener('click', function () { saveState(); play(s); });
+    cell.querySelector('.sg').addEventListener('click', function () { suggestFor(s); });
     cell.querySelector('.st').addEventListener('click', function () { stop(s); });
     cell.querySelector('.cl').addEventListener('click', function () { stop(s); s.url.value = ''; s.name.value = ''; s.retag(); saveState(); });
     s.mute.addEventListener('click', function () { unmuted = (unmuted === i) ? -1 : i; applyMute(); });
@@ -427,6 +449,46 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
     if (!s) { s = slots[ptr % slots.length]; ptr++; }
     s.name.value = it.name; s.url.value = it.url; s.retag();
     saveState(); play(s);
+  }
+
+  // ---------- ช่องแนะนำ ----------
+  function suggestionPool() {
+    var sv = savedList();
+    var pool = sv.length ? sv : RECOMMENDED;
+    return pool.length ? pool : RECOMMENDED;
+  }
+  function suggestFor(s) {
+    var pool = suggestionPool();
+    if (!pool.length) return;
+    var used = slots.map(function (x) { return x.url.value.trim(); }).filter(Boolean);
+    var avail = pool.filter(function (it) { return used.indexOf(it.url) === -1; });
+    if (!avail.length) avail = pool;
+    var pick = avail[Math.floor(Math.random() * avail.length)];
+    stop(s);
+    s.name.value = pick.name; s.url.value = pick.url; s.retag();
+    saveState(); play(s);
+  }
+  function suggestAll() {
+    var pool = suggestionPool().slice();
+    // สุ่มลำดับ (Fisher–Yates)
+    for (var i = pool.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = pool[i]; pool[i] = pool[j]; pool[j] = t;
+    }
+    var used = [];
+    slots.forEach(function (s, i) {
+      var pick = pool[i % pool.length];
+      // เลี่ยงใส่ช่องซ้ำถ้ามีตัวเลือกพอ
+      if (used.indexOf(pick.url) > -1) {
+        var alt = pool.filter(function (it) { return used.indexOf(it.url) === -1; });
+        if (alt.length) pick = alt[0];
+      }
+      used.push(pick.url);
+      stop(s);
+      s.name.value = pick.name; s.url.value = pick.url; s.retag();
+      play(s);
+    });
+    saveState();
   }
 
   function renderPlaylist() {
@@ -609,9 +671,12 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
   pPreset.addEventListener('change', function () {
     var u = pPreset.value;
     if (u === 'saved') { pUrl.value = ''; showSaved(); return; }
+    if (u === 'recommended') { pUrl.value = ''; setPlaylist(RECOMMENDED, 0); return; }
     pUrl.value = u;
     loadFromUrl(u);
   });
+
+  document.getElementById('suggestAllBtn').addEventListener('click', suggestAll);
 
   document.getElementById('pLoad').addEventListener('click', function () {
     var u = pUrl.value.trim();
