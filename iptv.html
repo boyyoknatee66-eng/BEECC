@@ -76,6 +76,10 @@ input:focus-visible,button:focus-visible,.btn:focus-within{outline:2px solid var
 .plist .gp{color:var(--muted);font-size:13px;margin-left:8px}
 .plist .info{color:var(--muted);font-size:13px}
 .plist li button{min-height:36px;padding:0 12px;flex:0 0 auto}
+.plist .acts{display:flex;gap:6px;flex:0 0 auto}
+.plist .more{min-width:40px;padding:0 10px;font-weight:700;letter-spacing:1px}
+button.danger{border-color:#7A3A32;color:#FFB4A3}
+button.danger:hover{background:#2A1A18}
 select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--line2);border-radius:8px;color:var(--text);font:400 15px var(--font);max-width:100%}
 #pPreset{flex:1 1 220px}
 [hidden]{display:none !important}
@@ -118,6 +122,7 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
         <div class="row">
           <select id="pPreset" aria-label="เลือก playlist เริ่มต้น">
           <option value="saved">⭐ ช่องที่บันทึกไว้ (ที่เคยตรวจแล้ว)</option>
+            <option value="fav">💛 ช่องแนะนำของฉัน (เพิ่ม/ลบเอง)</option>
 <option value="https://iptv-org.github.io/iptv/index.m3u">1. iptv-org — ทั้งหมด (index.m3u)</option>
             <option value="playlists/tubi_all.m3u">2. Tubi — ทั้งหมด (tubi_all.m3u)</option>
             <option value="https://iptv-org.github.io/iptv/countries/th.m3u">3. iptv-org — ไทย (th.m3u)</option>
@@ -143,6 +148,11 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
           <div class="info" id="pUpdated" role="status"></div>
           <div class="info" id="pCheck" role="status"></div>
         <div class="info" id="pInfo" role="status"></div>
+        <div class="row" id="favAddRow" hidden>
+          <input id="favName" type="text" placeholder="ชื่อช่อง" aria-label="ชื่อช่องแนะนำที่จะเพิ่ม">
+          <input id="favUrl" type="url" placeholder="ลิงก์ .m3u8" aria-label="ลิงก์ช่องแนะนำที่จะเพิ่ม">
+          <button id="favAddBtn" type="button" class="primary">+ เพิ่มช่องแนะนำ</button>
+        </div>
         <ul id="pList" aria-label="รายการช่องใน playlist"></ul>
       </div>
     </aside>
@@ -156,6 +166,7 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
         กำหนดจำนวนคอลัมน์ × แถวได้ตั้งแต่ 1×1 ถึง 6×6 (จำนวนช่อง = คอลัมน์ × แถว) · ปรับขนาดแล้วลิงก์ของช่องเดิมยังอยู่ ·
         ใส่ลิงก์ <code>.m3u8</code> แล้วกด “เล่น” · ทุกช่องเริ่มแบบปิดเสียง เปิดเสียงได้ทีละช่อง ·
         Import รับไฟล์ <code>multiview.json</code>, ไฟล์ .txt ที่มีลิงก์บรรทัดละช่อง และ playlist <code>.m3u</code> (รูปแบบ #EXTINF) ซึ่งจะเปิดรายการให้เลือกช่องใส่ได้ (กด “ตรวจช่องที่ดูได้” เพื่อคัดเฉพาะช่องที่เล่นได้จากเบราว์เซอร์นี้) ·
+        เลือก “💛 ช่องแนะนำของฉัน” ใน Playlist เพื่อเพิ่ม/ลบช่องโปรดของตัวเอง หรือกด “💛 เพิ่มแนะนำ” ที่แต่ละช่องเพื่อบันทึกช่องนั้นเข้ารายการ ·
         <span class="warn">เปิดหลายช่องพร้อมกันกินเครื่องและเน็ตมาก</span> ·
         ถ้าเล่นไม่ขึ้น มักเป็นเพราะเซิร์ฟเวอร์สตรีมไม่เปิด CORS หรือเปิดหน้านี้ผ่าน https แต่ลิงก์เป็น http
       </p>
@@ -250,6 +261,7 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
       '<div class="row"><input type="text" class="nm" placeholder="ชื่อช่อง (ไม่บังคับ)" aria-label="ชื่อช่อง ' + (i + 1) + '" style="flex:0 1 140px">' +
       '<input type="url" class="ur" placeholder="https://…/stream.m3u8" aria-label="ลิงก์ .m3u8 ช่อง ' + (i + 1) + '"></div>' +
       '<div class="row small"><button type="button" class="go primary">เล่น</button>' +
+      '<button type="button" class="fv" title="เพิ่มช่องนี้เข้ารายการช่องแนะนำของฉัน">💛 เพิ่มแนะนำ</button>' +
       '<button type="button" class="mu" aria-pressed="false">เปิดเสียง</button>' +
       '<button type="button" class="st">หยุด</button>' +
       '<button type="button" class="cl">ล้าง</button></div>';
@@ -264,6 +276,11 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
     s.url.addEventListener('change', saveState);
     s.url.addEventListener('keydown', function (e) { if (e.key === 'Enter') { saveState(); play(s); } });
     cell.querySelector('.go').addEventListener('click', function () { saveState(); play(s); });
+    cell.querySelector('.fv').addEventListener('click', function () {
+      var url = s.url.value.trim();
+      if (!url) { alert('ใส่ลิงก์ของช่องนี้ก่อน แล้วค่อยเพิ่มเป็นช่องแนะนำ'); return; }
+      addFavorite(s.name.value.trim(), url);
+    });
     cell.querySelector('.st').addEventListener('click', function () { stop(s); });
     cell.querySelector('.cl').addEventListener('click', function () { stop(s); s.url.value = ''; s.name.value = ''; s.retag(); saveState(); });
     s.mute.addEventListener('click', function () { unmuted = (unmuted === i) ? -1 : i; applyMute(); });
@@ -323,6 +340,7 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
 
   // ---------- M3U playlist ----------
   var playlist = [];
+  var plSource = '';
   var plBox = document.getElementById('plist');
   var pCount = document.getElementById('pcount');
   var pInfo = document.getElementById('pInfo');
@@ -331,7 +349,6 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
   var pGroup = document.getElementById('pGroup');
   var pUrl = document.getElementById('pUrl');
   var ptr = 0;
-  var SHOW = 100;
 
   function parseM3U(text) {
     var lines = text.replace(/^\uFEFF/, '').split(/\r?\n/);
@@ -398,6 +415,7 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
   el.textContent = 'บันทึกช่องที่ดูได้ล่าสุด: ' + d + ' · ' + savedList().length + ' ช่อง';
   }
   function showSaved() {
+  plSource = 'saved';
   var items = savedList();
   if (!items.length) { pInfo.textContent = 'ยังไม่มีช่องที่บันทึกไว้ — โหลด playlist แล้วกด “ตรวจช่องที่ดูได้” ก่อน'; return; }
   setPlaylist(items, 0);
@@ -429,11 +447,64 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
     saveState(); play(s);
   }
 
+  // ---------- ช่องแนะนำของฉัน (เพิ่ม/ลบเอง) ----------
+  var FSTORE = 'multiview.favorites';
+  var favorites = [];
+  var favAddRow = document.getElementById('favAddRow');
+  var favName = document.getElementById('favName');
+  var favUrl = document.getElementById('favUrl');
+
+  function loadFavorites() {
+    try {
+      var r = JSON.parse(localStorage.getItem(FSTORE) || 'null');
+      if (Array.isArray(r)) favorites = r.filter(function (c) { return c && typeof c.url === 'string'; });
+    } catch (e) {}
+  }
+  function saveFavorites() {
+    try { localStorage.setItem(FSTORE, JSON.stringify(favorites)); } catch (e) { alert('บันทึกไม่ได้ (พื้นที่เบราว์เซอร์เต็มหรือถูกปิด)'); }
+  }
+  function isFavMode() { return plSource === 'fav'; }
+  function refreshFavView() {
+    if (!isFavMode()) return;
+    playlist = favorites.slice();
+    pCount.textContent = '· ' + playlist.length + ' ช่อง';
+    renderPlaylist();
+  }
+  function addFavorite(name, url) {
+    url = (url || '').trim();
+    if (!/^https?:\/\//i.test(url)) { alert('ใส่ลิงก์ให้ขึ้นต้นด้วย http:// หรือ https://'); return false; }
+    if (favorites.some(function (f) { return f.url === url; })) { alert('มีช่องนี้ในรายการช่องแนะนำอยู่แล้ว'); return false; }
+    favorites.push({ name: (name || '').trim() || url, url: url, group: 'ช่องแนะนำของฉัน' });
+    saveFavorites();
+    refreshFavView();
+    return true;
+  }
+  function removeFavorite(url) {
+    favorites = favorites.filter(function (f) { return f.url !== url; });
+    saveFavorites();
+    refreshFavView();
+  }
+  function showFavorites() {
+    plSource = 'fav';
+    setPlaylist(favorites.slice(), 0);
+    favAddRow.hidden = false;
+  }
+  favAddRow.hidden = true;
+  document.getElementById('favAddBtn').addEventListener('click', function () {
+    if (addFavorite(favName.value, favUrl.value)) { favName.value = ''; favUrl.value = ''; favName.focus(); }
+  });
+  [favName, favUrl].forEach(function (el) {
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('favAddBtn').click(); }
+    });
+  });
+
   function renderPlaylist() {
     var list = filtered();
     var keep = pList.scrollTop;
     pList.textContent = '';
-    list.slice(0, SHOW).forEach(function (it) {
+    var frag = document.createDocumentFragment();
+    list.forEach(function (it) {
       var li = document.createElement('li');
       var st = status[it.url];
       if (st === 'fail') li.className = 'dim';
@@ -441,14 +512,37 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
       if (it.group) { var gs = document.createElement('span'); gs.className = 'gp'; gs.textContent = it.group; sp.appendChild(gs); }
       if (st === 'ok') { var ob = document.createElement('span'); ob.className = 'okb'; ob.textContent = 'ดูได้'; sp.appendChild(ob); }
       else if (st === 'fail') { var fb = document.createElement('span'); fb.className = 'badb'; fb.textContent = 'ดูไม่ได้'; sp.appendChild(fb); }
+      var actions = document.createElement('span'); actions.className = 'acts';
       var b = document.createElement('button'); b.type = 'button'; b.textContent = 'ใส่ช่อง';
       b.setAttribute('aria-label', 'ใส่ช่อง ' + it.name);
       b.addEventListener('click', function () { useItem(it); });
-      li.appendChild(sp); li.appendChild(b); pList.appendChild(li);
+      actions.appendChild(b);
+      if (isFavMode()) {
+        var moreBtn = document.createElement('button'); moreBtn.type = 'button'; moreBtn.className = 'more';
+        moreBtn.textContent = '⋯'; moreBtn.setAttribute('aria-label', 'ตัวเลือกเพิ่มเติม ' + it.name); moreBtn.setAttribute('aria-expanded', 'false');
+        var rb = document.createElement('button'); rb.type = 'button'; rb.className = 'danger'; rb.textContent = 'ลบ'; rb.hidden = true;
+        rb.setAttribute('aria-label', 'ลบช่องแนะนำ ' + it.name);
+        rb.addEventListener('click', function (e) { e.stopPropagation(); removeFavorite(it.url); });
+        moreBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var willShow = rb.hidden;
+          pList.querySelectorAll('button.danger').forEach(function (x) {
+            x.hidden = true;
+            var m = x.previousSibling; if (m && m.classList && m.classList.contains('more')) m.setAttribute('aria-expanded', 'false');
+          });
+          rb.hidden = !willShow;
+          moreBtn.setAttribute('aria-expanded', willShow ? 'true' : 'false');
+        });
+        actions.appendChild(moreBtn);
+        actions.appendChild(rb);
+      }
+      li.appendChild(sp); li.appendChild(actions);
+      frag.appendChild(li);
     });
+    pList.appendChild(frag);
     pList.scrollTop = keep;
     pInfo.textContent = playlist.length
-      ? (list.length > SHOW ? 'แสดง ' + SHOW + ' จาก ' + list.length + ' ช่อง — พิมพ์ค้นหาเพื่อกรอง' : 'พบ ' + list.length + ' ช่อง')
+      ? 'พบ ' + list.length + ' ช่อง'
       : '';
   }
 
@@ -464,6 +558,7 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
     pGroup.hidden = groups.length < 2;
     pSearch.value = '';
     pCount.textContent = '· ' + items.length + ' ช่อง' + (skipped ? ' (ข้าม ' + skipped + ' รายการที่ไม่ใช่ http/https)' : '');
+    if (plSource !== 'fav') favAddRow.hidden = true;
     setPanel(true);
     renderPlaylist();
   }
@@ -538,11 +633,22 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
     btnCheck.hidden = true; btnStop.hidden = false;
     var idx = 0, done = 0, okN = 0, lastDraw = 0, total = todo.length, sig = checkCtl.signal;
 
-    function savePartial() {
+    var applied = {};
+    function applyResults() {
       todo.forEach(function (it) {
-        if (status[it.url] === 'ok') saved.map[it.url] = { name: it.name, url: it.url, group: it.group || '' };
-        else if (status[it.url] === 'fail') delete saved.map[it.url];
+        var st = status[it.url];
+        if (!st || applied[it.url]) return;
+        applied[it.url] = true;
+        if (st === 'ok') saved.map[it.url] = { name: it.name, url: it.url, group: it.group || '' };
+        else if (saved.map[it.url]) {
+          // ตรวจไม่ผ่านต้อง 2 ครั้งถึงจะลบ กันช่องดีหายเพราะเน็ตสะดุด
+          var e = saved.map[it.url]; e.f = (e.f || 0) + 1;
+          if (e.f >= 2) delete saved.map[it.url];
+        }
       });
+    }
+    function savePartial() {
+      applyResults();
       saved.updatedAt = new Date().toISOString(); persistSaved();
     }
     function progress() {
@@ -570,10 +676,7 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
       checking = false; checkCtl = null;
       btnCheck.hidden = false; btnStop.hidden = true;
       pCheck.textContent = (aborted ? 'หยุดตรวจแล้ว · ' : 'ตรวจเสร็จ · ') + 'ตรวจ ' + done + ' ช่อง ดูได้ ' + okN + ' ช่อง';
-      todo.forEach(function (it) {
-      if (status[it.url] === 'ok') saved.map[it.url] = { name: it.name, url: it.url, group: it.group || '' };
-      else if (status[it.url] === 'fail') delete saved.map[it.url];
-      });
+      applyResults();
       if (done > 0) { saved.updatedAt = new Date().toISOString(); persistSaved(); showUpdated(); }
       if (okN > 0 && !aborted) onlyOk.checked = true;
       renderPlaylist();
@@ -614,7 +717,9 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
   var pPreset = document.getElementById('pPreset');
   pPreset.addEventListener('change', function () {
     var u = pPreset.value;
+    favAddRow.hidden = u !== 'fav';
     if (u === 'saved') { pUrl.value = ''; showSaved(); return; }
+    if (u === 'fav') { pUrl.value = ''; showFavorites(); return; }
     pUrl.value = u;
     loadFromUrl(u);
   });
@@ -633,6 +738,7 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
       var p = parseM3U(t);
       if (p.hls) { alert('ไฟล์นี้เป็น HLS playlist ของสตรีมเดียว (มี #EXT-X-…) ไม่ใช่รายการช่อง — ให้นำลิงก์ .m3u8 ไปใส่ในช่องโดยตรง'); return; }
       if (!p.items.length) { alert('ไม่พบลิงก์ http/https ใน playlist นี้'); return; }
+      plSource = 'url';
       setPlaylist(p.items, p.skipped);
       slots.forEach(stop);
       fill(p.items.slice(0, slots.length));
@@ -725,6 +831,7 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
   })();
 
   loadSavedStore();
+  loadFavorites();
   if (savedList().length) showSaved();
 
   document.getElementById('importFile').addEventListener('change', function (e) {
@@ -734,6 +841,13 @@ select{height:44px;padding:0 10px;background:var(--bg);border:1px solid var(--li
     r.onload = function () { handleText(String(r.result || '')); };
     r.readAsText(f);
     e.target.value = '';
+  });
+
+  document.addEventListener('click', function () {
+    pList.querySelectorAll('button.danger').forEach(function (x) {
+      x.hidden = true;
+      var m = x.previousSibling; if (m && m.classList && m.classList.contains('more')) m.setAttribute('aria-expanded', 'false');
+    });
   });
 })();
 </script>
